@@ -3,10 +3,14 @@ package ru.akinadude.mvvmsample
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.view.Menu
+import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProviders
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import kotlinx.android.synthetic.main.activity_main.*
 import ru.akinadude.mvvmsample.AddNoteActivity.Companion.DESCRIPTION_EXTRA
 import ru.akinadude.mvvmsample.AddNoteActivity.Companion.PRIORITY_EXTRA
@@ -26,7 +30,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         add_note_floating_action_button.setOnClickListener {
-            val intent = Intent(MainActivity@ this, AddNoteActivity::class.java)
+            val intent = Intent(this@MainActivity, AddNoteActivity::class.java)
             startActivityForResult(intent, ADD_NOTE_REQUEST_CODE)
         }
 
@@ -37,6 +41,21 @@ class MainActivity : AppCompatActivity() {
         viewModel = ViewModelProviders.of(this).get(NoteViewModel::class.java)
         viewModel.getAllNotes().observe(this) { adapter.setNotes(it) }
 
+        val itemTouchCallbackImpl =
+            object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
+                override fun onMove(
+                    recyclerView: RecyclerView,
+                    viewHolder: RecyclerView.ViewHolder,
+                    target: RecyclerView.ViewHolder
+                ): Boolean = false
+
+                override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                    viewModel.delete(adapter.getNoteAt(viewHolder.adapterPosition))
+                    Toast.makeText(this@MainActivity, "Note deleted", Toast.LENGTH_SHORT).show()
+                }
+            }
+        val itemTouchHelper = ItemTouchHelper(itemTouchCallbackImpl)
+        itemTouchHelper.attachToRecyclerView(recycler_view)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -54,6 +73,22 @@ class MainActivity : AppCompatActivity() {
             }
         } else {
             Toast.makeText(this, "Note is not saved", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+        menuInflater.inflate(R.menu.menu_main, menu)
+        return true
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
+        return when (item?.itemId) {
+            R.id.delete_all_notes -> {
+                viewModel.deleteAllNotes()
+                Toast.makeText(this, "All notes deleted", Toast.LENGTH_LONG).show()
+                true
+            }
+            else -> super.onOptionsItemSelected(item)
         }
     }
 
