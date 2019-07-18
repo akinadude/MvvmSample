@@ -8,25 +8,33 @@ import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import kotlinx.android.synthetic.main.activity_add_note.*
 
-class AddNoteActivity : AppCompatActivity() {
+class AddEditNoteActivity : AppCompatActivity() {
 
     companion object {
-        const val TITLE_EXTRA = "title_extra"
-        const val DESCRIPTION_EXTRA = "description_extra"
-        const val PRIORITY_EXTRA = "priority_extra"
+        const val EXTRA_TITLE = "title_extra"
+        const val EXTRA_DESCRIPTION = "description_extra"
+        const val EXTRA_PRIORITY = "priority_extra"
+        const val EXTRA_ID = "id_extra"
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_add_note)
 
-        title_edit_text
-        description_edit_text
         priority_number_picker.minValue = 1
         priority_number_picker.maxValue = 10
 
         supportActionBar?.setHomeAsUpIndicator(R.drawable.ic_close)
-        title = "Add Note"
+
+        if (intent.hasExtra(EXTRA_ID)) {
+            title_edit_text.setText(intent.getStringExtra(EXTRA_TITLE))
+            description_edit_text.setText(intent.getStringExtra(EXTRA_DESCRIPTION))
+            priority_number_picker.value = intent.getIntExtra(EXTRA_PRIORITY, 1)
+            title = "Edit Note"
+
+        } else {
+            title = "Add Note"
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -55,9 +63,11 @@ class AddNoteActivity : AppCompatActivity() {
         }
 
         val intent = Intent().apply {
-            putExtra(TITLE_EXTRA, title)
-            putExtra(DESCRIPTION_EXTRA, description)
-            putExtra(PRIORITY_EXTRA, priority)
+            val id = intent.getIntExtra(EXTRA_ID, -1)
+            putExtra(EXTRA_ID, id)
+            putExtra(EXTRA_TITLE, title)
+            putExtra(EXTRA_DESCRIPTION, description)
+            putExtra(EXTRA_PRIORITY, priority)
         }
         setResult(RESULT_OK, intent)
         finish()

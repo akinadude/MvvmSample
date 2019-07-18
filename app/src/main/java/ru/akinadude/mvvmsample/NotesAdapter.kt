@@ -7,22 +7,14 @@ import androidx.recyclerview.widget.RecyclerView
 import kotlinx.android.synthetic.main.item_rv_note.view.*
 import ru.akinadude.mvvmsample.model.Note
 
-class NotesAdapter: RecyclerView.Adapter<NotesAdapter.NoteViewHolder>() {
+class NotesAdapter(private val itemClickListener: OnItemClickListener) :
+    RecyclerView.Adapter<NotesAdapter.NoteViewHolder>() {
 
     private var notes: MutableList<Note> = ArrayList()
 
-    class NoteViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
-
-        fun bind(note: Note) {
-            itemView.text_view_title.text = note.title
-            itemView.text_view_description.text = note.description
-            itemView.text_view_priority.text = note.priority.toString()
-        }
-    }
-
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NoteViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_rv_note, parent, false)
-        return NoteViewHolder(view)
+        return NoteViewHolder(view, itemClickListener)
     }
 
     override fun onBindViewHolder(viewHolder: NoteViewHolder, position: Int) {
@@ -41,4 +33,17 @@ class NotesAdapter: RecyclerView.Adapter<NotesAdapter.NoteViewHolder>() {
     }
 
     fun getNoteAt(position: Int): Note = notes[position]
+
+    inner class NoteViewHolder(itemView: View, itemClickListener: OnItemClickListener) : RecyclerView.ViewHolder(itemView) {
+
+        init {
+            itemView.setOnClickListener { itemClickListener.onClick(getNoteAt(adapterPosition)) }
+        }
+
+        fun bind(note: Note) {
+            itemView.text_view_title.text = note.title
+            itemView.text_view_description.text = note.description
+            itemView.text_view_priority.text = note.priority.toString()
+        }
+    }
 }

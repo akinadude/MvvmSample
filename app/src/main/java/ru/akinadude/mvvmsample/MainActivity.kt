@@ -12,30 +12,43 @@ import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import kotlinx.android.synthetic.main.activity_main.*
-import ru.akinadude.mvvmsample.AddNoteActivity.Companion.DESCRIPTION_EXTRA
-import ru.akinadude.mvvmsample.AddNoteActivity.Companion.PRIORITY_EXTRA
-import ru.akinadude.mvvmsample.AddNoteActivity.Companion.TITLE_EXTRA
+import ru.akinadude.mvvmsample.AddEditNoteActivity.Companion.EXTRA_DESCRIPTION
+import ru.akinadude.mvvmsample.AddEditNoteActivity.Companion.EXTRA_ID
+import ru.akinadude.mvvmsample.AddEditNoteActivity.Companion.EXTRA_PRIORITY
+import ru.akinadude.mvvmsample.AddEditNoteActivity.Companion.EXTRA_TITLE
 import ru.akinadude.mvvmsample.model.Note
 
 class MainActivity : AppCompatActivity() {
 
     companion object {
         const val ADD_NOTE_REQUEST_CODE = 1
+        const val EDIT_NOTE_REQUEST_CODE = 2
     }
 
     private lateinit var viewModel: NoteViewModel
+    private val onItemClickListener = object : OnItemClickListener {
+        override fun onClick(note: Note) {
+            val intent = Intent(this@MainActivity, AddEditNoteActivity::class.java).apply {
+                putExtra(EXTRA_ID, note.id)
+                putExtra(EXTRA_TITLE, note.title)
+                putExtra(EXTRA_DESCRIPTION, note.description)
+                putExtra(EXTRA_PRIORITY, note.priority)
+            }
+            startActivityForResult(intent, EDIT_NOTE_REQUEST_CODE)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         add_note_floating_action_button.setOnClickListener {
-            val intent = Intent(this@MainActivity, AddNoteActivity::class.java)
+            val intent = Intent(this@MainActivity, AddEditNoteActivity::class.java)
             startActivityForResult(intent, ADD_NOTE_REQUEST_CODE)
         }
 
         recycler_view.layoutManager = LinearLayoutManager(this)
-        val adapter = NotesAdapter()
+        val adapter = NotesAdapter(onItemClickListener)
         recycler_view.adapter = adapter
 
         viewModel = ViewModelProviders.of(this).get(NoteViewModel::class.java)
@@ -62,14 +75,30 @@ class MainActivity : AppCompatActivity() {
         super.onActivityResult(requestCode, resultCode, data)
 
         if (requestCode == ADD_NOTE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
-            val title = data?.getStringExtra(TITLE_EXTRA)
-            val description = data?.getStringExtra(DESCRIPTION_EXTRA)
-            val priority = data?.getIntExtra(PRIORITY_EXTRA, 1)
+            val title = data?.getStringExtra(EXTRA_TITLE)
+            val description = data?.getStringExtra(EXTRA_DESCRIPTION)
+            val priority = data?.getIntExtra(EXTRA_PRIORITY, 1)
 
             if (title != null && description != null && priority != null) {
                 val note = Note(title, description, priority)
                 viewModel.insert(note)
                 Toast.makeText(this, "Note is saved", Toast.LENGTH_LONG).show()
+            }
+        } else if (requestCode == EDIT_NOTE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            val id = data?.getIntExtra(EXTRA_ID, -1) ?: -1
+            if (id == -1) {
+                Toast.makeText(this, "Note can't be updated", Toast.LENGTH_LONG).show()
+                return
+            }
+
+            val title = data?.getStringExtra(EXTRA_TITLE)
+            val description = data?.getStringExtra(EXTRA_DESCRIPTION)
+            val priority = data?.getIntExtra(EXTRA_PRIORITY, 1)
+            if (title != null && description != null && priority != null) {
+                val note = Note(title, description, priority)
+                note.id = id
+                viewModel.update(note)
+                Toast.makeText(this, "Note is updated", Toast.LENGTH_LONG).show()
             }
         } else {
             Toast.makeText(this, "Note is not saved", Toast.LENGTH_LONG).show()
@@ -91,6 +120,9 @@ class MainActivity : AppCompatActivity() {
             else -> super.onOptionsItemSelected(item)
         }
     }
+
+    //todo dissect logic in fragment on view and viewmodel.
+    //todo add network layer -> add repository -> add interactor.
 
     //viewmodel in general.
     //databinding and viewmodel, how do they live together?
