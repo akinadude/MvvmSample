@@ -11,12 +11,16 @@ import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.google.android.gms.auth.api.signin.GoogleSignIn
 import kotlinx.android.synthetic.main.activity_main.*
 import ru.akinadude.mvvmsample.AddEditNoteActivity.Companion.EXTRA_DESCRIPTION
 import ru.akinadude.mvvmsample.AddEditNoteActivity.Companion.EXTRA_ID
 import ru.akinadude.mvvmsample.AddEditNoteActivity.Companion.EXTRA_PRIORITY
 import ru.akinadude.mvvmsample.AddEditNoteActivity.Companion.EXTRA_TITLE
 import ru.akinadude.mvvmsample.model.Note
+import com.google.android.gms.common.Scopes
+import com.google.android.gms.common.api.Scope
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -75,10 +79,33 @@ class MainActivity : AppCompatActivity() {
             }
         val itemTouchHelper = ItemTouchHelper(itemTouchCallbackImpl)
         itemTouchHelper.attachToRecyclerView(recycler_view)
+
+        val SCOPE_CONTACTS_READ = Scope("https://www.googleapis.com/auth/tasks")
+        val SCOPE_EMAIL = Scope(Scopes.EMAIL)
+        if (!GoogleSignIn.hasPermissions(
+            GoogleSignIn.getLastSignedInAccount(this@MainActivity),
+            SCOPE_CONTACTS_READ,
+            SCOPE_EMAIL
+        )) {
+            GoogleSignIn.requestPermissions(
+                this@MainActivity,
+                101,
+                GoogleSignIn.getLastSignedInAccount(this@MainActivity),
+                SCOPE_CONTACTS_READ,
+                SCOPE_EMAIL);
+        }
+        //https://developer.android.com/training/id-auth/authenticate
+        //https://developers.google.com/tasks/oauth-and-tasks-on-android
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+
+        if (resultCode == Activity.RESULT_OK) {
+            if (101 == requestCode) {
+                getContacts();
+            }
+        }
 
         if (requestCode == ADD_NOTE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
             val title = data?.getStringExtra(EXTRA_TITLE)
@@ -126,6 +153,10 @@ class MainActivity : AppCompatActivity() {
             else -> super.onOptionsItemSelected(item)
         }
     }
+
+    //todo scope for tasks: https://www.googleapis.com/auth/tasks
+
+    //todo coroutines and viewmodel. Working with scope.
 
     //todo dissect logic in fragment on view and viewmodel.
     //todo add network layer -> add repository -> add interactor.
