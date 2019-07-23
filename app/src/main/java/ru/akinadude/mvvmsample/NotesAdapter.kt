@@ -1,16 +1,26 @@
 package ru.akinadude.mvvmsample
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
-import androidx.recyclerview.widget.RecyclerView
-import kotlinx.android.synthetic.main.item_rv_note.view.*
+import androidx.recyclerview.widget.DiffUtil
+import androidx.recyclerview.widget.ListAdapter
 import ru.akinadude.mvvmsample.model.Note
 
-class NotesAdapter(private val itemClickListener: OnItemClickListener) :
-    RecyclerView.Adapter<NotesAdapter.NoteViewHolder>() {
+class NotesAdapter(
+    private val itemClickListener: OnItemClickListener
+) : ListAdapter<Note, NoteViewHolder>(diffCallback) {
 
-    private var notes: MutableList<Note> = ArrayList()
+    companion object {
+        private val diffCallback = object : DiffUtil.ItemCallback<Note>() {
+            override fun areItemsTheSame(oldItem: Note, newItem: Note): Boolean =
+                oldItem.id == newItem.id
+
+            override fun areContentsTheSame(oldItem: Note, newItem: Note): Boolean =
+                oldItem.title == newItem.title
+                        && oldItem.description == newItem.description
+                        && oldItem.priority == newItem.priority
+        }
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NoteViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.item_rv_note, parent, false)
@@ -18,32 +28,12 @@ class NotesAdapter(private val itemClickListener: OnItemClickListener) :
     }
 
     override fun onBindViewHolder(viewHolder: NoteViewHolder, position: Int) {
-        viewHolder.bind(notes[position])
+        viewHolder.bind(getItem(position))
     }
-
-    override fun getItemCount(): Int = notes.size
 
     override fun getItemViewType(position: Int): Int {
         return super.getItemViewType(position)
     }
 
-    fun setNotes(notesToSet: List<Note>) {
-        notes = notesToSet.toMutableList()
-        notifyDataSetChanged()
-    }
-
-    fun getNoteAt(position: Int): Note = notes[position]
-
-    inner class NoteViewHolder(itemView: View, itemClickListener: OnItemClickListener) : RecyclerView.ViewHolder(itemView) {
-
-        init {
-            itemView.setOnClickListener { itemClickListener.onClick(getNoteAt(adapterPosition)) }
-        }
-
-        fun bind(note: Note) {
-            itemView.text_view_title.text = note.title
-            itemView.text_view_description.text = note.description
-            itemView.text_view_priority.text = note.priority.toString()
-        }
-    }
+    fun getNoteAt(position: Int): Note = getItem(position)
 }

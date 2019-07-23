@@ -20,6 +20,12 @@ import ru.akinadude.mvvmsample.model.Note
 
 class MainActivity : AppCompatActivity() {
 
+    //todo authorise on google tasks, get access token.
+    //todo create three tasks in list on google tasks.
+    //todo get that three tasks by web request with access token and show them in RV.
+
+    //todo How does refreshing of an access token work?
+
     companion object {
         const val ADD_NOTE_REQUEST_CODE = 1
         const val EDIT_NOTE_REQUEST_CODE = 2
@@ -52,7 +58,7 @@ class MainActivity : AppCompatActivity() {
         recycler_view.adapter = adapter
 
         viewModel = ViewModelProviders.of(this).get(NoteViewModel::class.java)
-        viewModel.getAllNotes().observe(this) { adapter.setNotes(it) }
+        viewModel.getAllNotes().observe(this) { adapter.submitList(it) }
 
         val itemTouchCallbackImpl =
             object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
