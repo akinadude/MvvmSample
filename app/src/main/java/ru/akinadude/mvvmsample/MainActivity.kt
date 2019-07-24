@@ -1,8 +1,12 @@
 package ru.akinadude.mvvmsample
 
+import android.accounts.AccountManager
+import android.accounts.AccountManagerCallback
+import android.accounts.AccountManagerFuture
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import android.os.Handler
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
@@ -20,6 +24,9 @@ import ru.akinadude.mvvmsample.AddEditNoteActivity.Companion.EXTRA_TITLE
 import ru.akinadude.mvvmsample.model.Note
 import com.google.android.gms.common.Scopes
 import com.google.android.gms.common.api.Scope
+import android.accounts.Account
+import android.os.Message
+import android.util.Log
 
 
 class MainActivity : AppCompatActivity() {
@@ -80,32 +87,44 @@ class MainActivity : AppCompatActivity() {
         val itemTouchHelper = ItemTouchHelper(itemTouchCallbackImpl)
         itemTouchHelper.attachToRecyclerView(recycler_view)
 
-        val SCOPE_CONTACTS_READ = Scope("https://www.googleapis.com/auth/tasks")
-        val SCOPE_EMAIL = Scope(Scopes.EMAIL)
-        if (!GoogleSignIn.hasPermissions(
-            GoogleSignIn.getLastSignedInAccount(this@MainActivity),
-            SCOPE_CONTACTS_READ,
-            SCOPE_EMAIL
-        )) {
-            GoogleSignIn.requestPermissions(
-                this@MainActivity,
-                101,
-                GoogleSignIn.getLastSignedInAccount(this@MainActivity),
-                SCOPE_CONTACTS_READ,
-                SCOPE_EMAIL);
-        }
+        val accountManager = AccountManager.get(this)
+        val optionsBundle = Bundle()
+
+        //todo needs permission to work with accounts
+        // https://stackoverflow.com/questions/35050548/android-accountmanager-getaccounts-returns-an-empty-array
+
+        //authTokenType: "Manage your tasks"
+        recycler_view.postDelayed({
+            val accounts2 = accountManager.accounts
+            val accounts = accountManager.getAccountsByType("com.google")
+            val account = accounts.find { it.type == "com.google" && it.name.contains("konunger") }
+
+            accountManager.getAuthToken(
+                account,                     // Account retrieved using getAccountsByType()
+                "https://www.googleapis.com/auth/tasks",            // Auth scope
+                optionsBundle,                        // Authenticator-specific options
+                this,                           // Your activity
+                OnTokenAcquired(),              // Callback called when a token is successfully acquired
+                Handler(OnError())             // Callback called if an error occurs
+            )
+        }, 5000)
+
         //https://developer.android.com/training/id-auth/authenticate
         //https://developers.google.com/tasks/oauth-and-tasks-on-android
+
+        //todo The Google APIs require you to supply four values with each request:
+        // the API key, the client ID, the client secret, and the auth key
+        /*val url = URL("https://www.googleapis.com/tasks/v1/users/@me/lists?key=$your_api_key")
+val conn = url.openConnection() as HttpURLConnection
+conn.apply {
+    addRequestProperty("client_id", your client id)
+    addRequestProperty("client_secret", your client secret)
+    setRequestProperty("Authorization", "OAuth $token")
+}*/
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-
-        if (resultCode == Activity.RESULT_OK) {
-            if (101 == requestCode) {
-                getContacts();
-            }
-        }
 
         if (requestCode == ADD_NOTE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
             val title = data?.getStringExtra(EXTRA_TITLE)
@@ -154,11 +173,34 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private class OnTokenAcquired : AccountManagerCallback<Bundle> {
+
+        override fun run(result: AccountManagerFuture<Bundle>) {
+            // Get the result of the operation from the AccountManagerFuture.
+            val bundle: Bundle = result.result
+
+            Log.d("Auth", "bundle: $bundle")
+
+            // The token is a named value in the bundle. The name of the value
+            // is stored in the constant AccountManager.KEY_AUTHTOKEN.
+            val token: String? = bundle.getString(AccountManager.KEY_AUTHTOKEN)
+            Log.d("Auth", "token: $token")
+        }
+    }
+
+    private class OnError : Handler.Callback {
+        override fun handleMessage(p0: Message?): Boolean {
+            Log.d("Auth", "error is occurred, message: $p0")
+            return true
+        }
+    }
+
     //todo scope for tasks: https://www.googleapis.com/auth/tasks
 
     //todo coroutines and viewmodel. Working with scope.
 
     //todo dissect logic in fragment on view and viewmodel.
+
     //todo add network layer -> add repository -> add interactor.
 
     //viewmodel in general.
