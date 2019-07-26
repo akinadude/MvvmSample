@@ -5,28 +5,27 @@ import android.accounts.AccountManagerCallback
 import android.accounts.AccountManagerFuture
 import android.app.Activity
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
+import android.os.Message
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.gms.auth.api.signin.GoogleSignIn
 import kotlinx.android.synthetic.main.activity_main.*
 import ru.akinadude.mvvmsample.AddEditNoteActivity.Companion.EXTRA_DESCRIPTION
 import ru.akinadude.mvvmsample.AddEditNoteActivity.Companion.EXTRA_ID
 import ru.akinadude.mvvmsample.AddEditNoteActivity.Companion.EXTRA_PRIORITY
 import ru.akinadude.mvvmsample.AddEditNoteActivity.Companion.EXTRA_TITLE
 import ru.akinadude.mvvmsample.model.Note
-import com.google.android.gms.common.Scopes
-import com.google.android.gms.common.api.Scope
-import android.accounts.Account
-import android.os.Message
-import android.util.Log
 
 
 class MainActivity : AppCompatActivity() {
@@ -36,6 +35,8 @@ class MainActivity : AppCompatActivity() {
     //todo get that three tasks by web request with access token and show them in RV.
 
     //todo How does refreshing of an access token work?
+
+    val MY_PERMISSIONS_REQUEST_READ_CONTACTS = 1001
 
     companion object {
         const val ADD_NOTE_REQUEST_CODE = 1
@@ -95,18 +96,21 @@ class MainActivity : AppCompatActivity() {
 
         //authTokenType: "Manage your tasks"
         recycler_view.postDelayed({
-            val accounts2 = accountManager.accounts
+            aaa()
+            //checkAndAskPermission()
+            /*val accounts2 = accountManager.accounts
             val accounts = accountManager.getAccountsByType("com.google")
             val account = accounts.find { it.type == "com.google" && it.name.contains("konunger") }
-
-            accountManager.getAuthToken(
-                account,                     // Account retrieved using getAccountsByType()
-                "https://www.googleapis.com/auth/tasks",            // Auth scope
-                optionsBundle,                        // Authenticator-specific options
-                this,                           // Your activity
-                OnTokenAcquired(),              // Callback called when a token is successfully acquired
-                Handler(OnError())             // Callback called if an error occurs
-            )
+            if (account != null) {
+                accountManager.getAuthToken(
+                    account,                     // Account retrieved using getAccountsByType()
+                    "https://www.googleapis.com/auth/tasks",            // Auth scope
+                    optionsBundle,                        // Authenticator-specific options
+                    this,                           // Your activity
+                    OnTokenAcquired(),              // Callback called when a token is successfully acquired
+                    Handler(OnError())             // Callback called if an error occurs
+                )
+            }*/
         }, 5000)
 
         //https://developer.android.com/training/id-auth/authenticate
@@ -123,8 +127,64 @@ conn.apply {
 }*/
     }
 
+    private fun aaa() {
+        /*val intent = AccountManager.newChooseAccountIntent(
+            null,
+            null,
+            arrayOf("com.google"),
+            false,
+            null,
+            null,
+            null,
+            null
+        )
+        startActivityForResult(intent, 2001)*/
+
+        val i = AccountManager.newChooseAccountIntent(null, null, arrayOf("com.google"), null, null, null, null)
+        startActivityForResult(i, 2001)
+    }
+
+    private fun checkAndAskPermission() {
+        val isGranted =
+            ContextCompat.checkSelfPermission(
+                this,
+                android.Manifest.permission.READ_CONTACTS
+            ) == PackageManager.PERMISSION_GRANTED
+        if (!isGranted) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(android.Manifest.permission.READ_CONTACTS),
+                MY_PERMISSIONS_REQUEST_READ_CONTACTS
+            )
+        }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
+
+        if (requestCode == 2001 && resultCode == Activity.RESULT_OK) {
+            val accountManager = AccountManager.get(this)
+            val accounts = accountManager.getAccountsByType("com.google")
+            val account = accounts.find { it.type == "com.google" && it.name.contains("konunger") }
+            val optionsBundle = Bundle()
+
+            if (account != null) {
+                accountManager.getAuthToken(
+                    account,                     // Account retrieved using getAccountsByType()
+                    "https://www.googleapis.com/auth/tasks",            // Auth scope
+                    optionsBundle,                        // Authenticator-specific options
+                    this,                           // Your activity
+                    OnTokenAcquired(),              // Callback called when a token is successfully acquired
+                    Handler(OnError())             // Callback called if an error occurs
+                )
+            }
+
+            return
+        }
 
         if (requestCode == ADD_NOTE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
             val title = data?.getStringExtra(EXTRA_TITLE)
