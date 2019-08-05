@@ -10,7 +10,7 @@ android {
     compileSdkVersion 28
     defaultConfig {
         applicationId "ru.akinadude.mvvmsample"
-        minSdkVersion 23
+        minSdkVersion 19
         targetSdkVersion 28
         versionCode 1
         versionName "1.0"
@@ -28,6 +28,7 @@ android {
 dependencies {
     def lifecycle_version = "2.0.0"
     def room_version = "2.1.0"
+    def okhttp_version = "3.10.0"
 
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
@@ -47,8 +48,18 @@ dependencies {
     kapt "androidx.room:room-compiler:$room_version"
 
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:1.2.1"
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.2.1'
 
-    implementation 'com.google.android.gms:play-services-auth:17.0.0'
+    implementation 'joda-time:joda-time:2.9.9'
+
+    // retrofit
+    implementation 'com.squareup.retrofit2:retrofit:2.6.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.6.0'//todo what is it responsible for?
+
+    implementation "com.squareup.okhttp3:okhttp:$okhttp_version"
+    implementation "com.squareup.okhttp3:logging-interceptor:$okhttp_version"
+
+    //implementation 'com.google.android.gms:play-services-auth:17.0.0'
 
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test:runner:1.2.0'

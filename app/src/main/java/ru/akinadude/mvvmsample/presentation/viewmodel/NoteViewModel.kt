@@ -1,14 +1,17 @@
-package ru.akinadude.mvvmsample
+package ru.akinadude.mvvmsample.presentation.viewmodel
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.LiveData
+import ru.akinadude.mvvmsample.TasksManager
 import ru.akinadude.mvvmsample.model.Note
 import ru.akinadude.mvvmsample.model.NoteRepository
 
 class NoteViewModel(
     application: Application
 ) : AndroidViewModel(application) {
+
+    //todo pass repository as constructor parameter
 
     private var repository: NoteRepository
     private var allNotes: LiveData<List<Note>>

@@ -5,7 +5,6 @@ import android.accounts.AccountManagerCallback
 import android.accounts.AccountManagerFuture
 import android.app.Activity
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Message
@@ -14,8 +13,6 @@ import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.app.ActivityCompat
-import androidx.core.content.ContextCompat
 import androidx.lifecycle.ViewModelProviders
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -26,6 +23,8 @@ import ru.akinadude.mvvmsample.AddEditNoteActivity.Companion.EXTRA_ID
 import ru.akinadude.mvvmsample.AddEditNoteActivity.Companion.EXTRA_PRIORITY
 import ru.akinadude.mvvmsample.AddEditNoteActivity.Companion.EXTRA_TITLE
 import ru.akinadude.mvvmsample.model.Note
+import ru.akinadude.mvvmsample.presentation.viewmodel.NoteViewModel
+import ru.akinadude.mvvmsample.presentation.viewmodel.TaskViewModel
 
 
 class MainActivity : AppCompatActivity() {
@@ -36,7 +35,8 @@ class MainActivity : AppCompatActivity() {
 
     //todo How does refreshing of an access token work?
 
-    val MY_PERMISSIONS_REQUEST_READ_CONTACTS = 1001
+    //todo For working with permissions try easy-permissions lib
+
 
     companion object {
         const val ADD_NOTE_REQUEST_CODE = 1
@@ -44,6 +44,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private lateinit var viewModel: NoteViewModel
+    private lateinit var taskViewModel: TaskViewModel
     private val onItemClickListener = object : OnItemClickListener {
         override fun onClick(note: Note) {
             val intent = Intent(this@MainActivity, AddEditNoteActivity::class.java).apply {
@@ -70,7 +71,9 @@ class MainActivity : AppCompatActivity() {
         recycler_view.adapter = adapter
 
         viewModel = ViewModelProviders.of(this).get(NoteViewModel::class.java)
+        taskViewModel = ViewModelProviders.of(this).get(TaskViewModel::class.java)
         viewModel.getAllNotes().observe(this) { adapter.submitList(it) }
+        taskViewModel.getActiveTasks()
 
         val itemTouchCallbackImpl =
             object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
@@ -87,104 +90,10 @@ class MainActivity : AppCompatActivity() {
             }
         val itemTouchHelper = ItemTouchHelper(itemTouchCallbackImpl)
         itemTouchHelper.attachToRecyclerView(recycler_view)
-
-        val accountManager = AccountManager.get(this)
-        val optionsBundle = Bundle()
-
-        //todo needs permission to work with accounts
-        // https://stackoverflow.com/questions/35050548/android-accountmanager-getaccounts-returns-an-empty-array
-
-        //authTokenType: "Manage your tasks"
-        recycler_view.postDelayed({
-            aaa()
-            //checkAndAskPermission()
-            /*val accounts2 = accountManager.accounts
-            val accounts = accountManager.getAccountsByType("com.google")
-            val account = accounts.find { it.type == "com.google" && it.name.contains("konunger") }
-            if (account != null) {
-                accountManager.getAuthToken(
-                    account,                     // Account retrieved using getAccountsByType()
-                    "https://www.googleapis.com/auth/tasks",            // Auth scope
-                    optionsBundle,                        // Authenticator-specific options
-                    this,                           // Your activity
-                    OnTokenAcquired(),              // Callback called when a token is successfully acquired
-                    Handler(OnError())             // Callback called if an error occurs
-                )
-            }*/
-        }, 5000)
-
-        //https://developer.android.com/training/id-auth/authenticate
-        //https://developers.google.com/tasks/oauth-and-tasks-on-android
-
-        //todo The Google APIs require you to supply four values with each request:
-        // the API key, the client ID, the client secret, and the auth key
-        /*val url = URL("https://www.googleapis.com/tasks/v1/users/@me/lists?key=$your_api_key")
-val conn = url.openConnection() as HttpURLConnection
-conn.apply {
-    addRequestProperty("client_id", your client id)
-    addRequestProperty("client_secret", your client secret)
-    setRequestProperty("Authorization", "OAuth $token")
-}*/
-    }
-
-    private fun aaa() {
-        /*val intent = AccountManager.newChooseAccountIntent(
-            null,
-            null,
-            arrayOf("com.google"),
-            false,
-            null,
-            null,
-            null,
-            null
-        )
-        startActivityForResult(intent, 2001)*/
-
-        val i = AccountManager.newChooseAccountIntent(null, null, arrayOf("com.google"), null, null, null, null)
-        startActivityForResult(i, 2001)
-    }
-
-    private fun checkAndAskPermission() {
-        val isGranted =
-            ContextCompat.checkSelfPermission(
-                this,
-                android.Manifest.permission.READ_CONTACTS
-            ) == PackageManager.PERMISSION_GRANTED
-        if (!isGranted) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(android.Manifest.permission.READ_CONTACTS),
-                MY_PERMISSIONS_REQUEST_READ_CONTACTS
-            )
-        }
-    }
-
-    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-
-        if (requestCode == 2001 && resultCode == Activity.RESULT_OK) {
-            val accountManager = AccountManager.get(this)
-            val accounts = accountManager.getAccountsByType("com.google")
-            val account = accounts.find { it.type == "com.google" && it.name.contains("konunger") }
-            val optionsBundle = Bundle()
-
-            if (account != null) {
-                accountManager.getAuthToken(
-                    account,                     // Account retrieved using getAccountsByType()
-                    "https://www.googleapis.com/auth/tasks",            // Auth scope
-                    optionsBundle,                        // Authenticator-specific options
-                    this,                           // Your activity
-                    OnTokenAcquired(),              // Callback called when a token is successfully acquired
-                    Handler(OnError())             // Callback called if an error occurs
-                )
-            }
-
-            return
-        }
 
         if (requestCode == ADD_NOTE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
             val title = data?.getStringExtra(EXTRA_TITLE)
@@ -255,7 +164,40 @@ conn.apply {
         }
     }
 
-    //todo scope for tasks: https://www.googleapis.com/auth/tasks
+    /*
+    Done! 0. Authenticate in todoist API.
+    API token: b0804bb8419deddec564faeffb164b6b78be49c2
+    Прикрутить корутины и вытаскивание всех активных тасков
+
+    Doing... 1. Watch video by R. Martin about clean arch
+
+    Done! 2. Watch video https://www.youtube.com/watch?v=W2c_HWthB0Y&t=623s
+
+    Done! 3. Прочесть статью https://developer.android.com/kotlin/coroutines
+
+    Done! 4. Прочесть статью https://proandroiddev.com/retrofit-met-coroutines-7bbe7e86825a
+
+    Done! 5. Прочесть статью https://proandroiddev.com/suspend-what-youre-doing-retrofit-has-now-coroutines-support-c65bd09ba067
+
+    6. Learn four links at the bottom of the article https://developer.android.com/kotlin/coroutines
+
+    7. Нагуглить и прочесть статьи 2 про clean arch, которые нашел в пт на работе.
+    Оттуда вытянуть схему разбиения по слоям.
+
+    8. Посмотреть еще одно видео из плэйлиста от wiseAss
+
+    9. Add ExceptionHandler for coroutines.
+
+    Optional
+    1. Done! Watch video https://www.youtube.com/watch?v=2rO4r-JOQtA&t=2s
+    */
+
+    //todo what lib is responsible for automatic response parsing? Retrofit itself of some gson adapter lib?
+
+    //todo sealed class Result with Value, Error flavours. Like Option in Scala :)
+
+    //todo what if due to rotating a device network call completed and sends data to live data before viewmodel attached to view?
+    // how can we deliver data to view in this case?
 
     //todo coroutines and viewmodel. Working with scope.
 
