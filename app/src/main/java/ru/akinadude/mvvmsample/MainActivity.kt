@@ -1,14 +1,8 @@
 package ru.akinadude.mvvmsample
 
-import android.accounts.AccountManager
-import android.accounts.AccountManagerCallback
-import android.accounts.AccountManagerFuture
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
-import android.os.Handler
-import android.os.Message
-import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.Toast
@@ -28,12 +22,20 @@ import ru.akinadude.mvvmsample.presentation.viewmodel.TaskViewModel
 
 //todo target: clean architecture (coroutines, koin, unit tests, integration tests, ui tests),
 // multi module project
-// decent navigation approach
+// decent navigation approach (Cicerone, Navigation from AAC)
 
-//todo introduce view model from aac
-//todo drop all async tasks use coroutines
-//todo use single activity application
-//todo introduce interactors, koin
+//todo Done! introduce view model from aac
+
+//todo Doing... introduce interactors, koin
+// Research the method of working with coroutines with launch which is being invoked in base view model,
+// compare with Fernando Cejas's method
+
+//todo drop all async tasks use coroutines, research room, research how it can interact with coroutines.
+
+//todo read about MVI pattern
+
+//todo use single activity application approach
+
 //todo introduce proper repository pattern (look at some examples, need to properly use interfaces)
 
 class MainActivity : AppCompatActivity() {
@@ -77,11 +79,24 @@ class MainActivity : AppCompatActivity() {
 
         viewModel = ViewModelProviders.of(this).get(NoteViewModel::class.java)
         taskViewModel = ViewModelProviders.of(this).get(TaskViewModel::class.java)
-        viewModel.getAllNotes().observe(this) { adapter.submitList(it) }
-        taskViewModel.getActiveTasks()
+
+        //todo let't concentrate on fetching data from backend
+        //viewModel.getAllNotes().observe(this) { adapter.submitList(it) }
+
+        //taskViewModel.getActiveTasks()
+
+        taskViewModel.tasks.observe(this) { result ->
+            when(result) {
+                //todo need to convert into proper data type
+                is Result.Success -> /*adapter.submitList(result.value)*/ Toast.makeText(this, "Everything is fine!", Toast.LENGTH_SHORT).show()
+                is Result.Failure -> Toast.makeText(this, "Some error happened", Toast.LENGTH_SHORT).show()
+            }
+        }
+        taskViewModel.getActiveTasks2()
 
         val itemTouchCallbackImpl =
-            object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
+            object :
+                ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT or ItemTouchHelper.RIGHT) {
                 override fun onMove(
                     recyclerView: RecyclerView,
                     viewHolder: RecyclerView.ViewHolder,
@@ -148,48 +163,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private class OnTokenAcquired : AccountManagerCallback<Bundle> {
-
-        override fun run(result: AccountManagerFuture<Bundle>) {
-            // Get the result of the operation from the AccountManagerFuture.
-            val bundle: Bundle = result.result
-
-            Log.d("Auth", "bundle: $bundle")
-
-            // The token is a named value in the bundle. The name of the value
-            // is stored in the constant AccountManager.KEY_AUTHTOKEN.
-            val token: String? = bundle.getString(AccountManager.KEY_AUTHTOKEN)
-            Log.d("Auth", "token: $token")
-        }
-    }
-
-    private class OnError : Handler.Callback {
-        override fun handleMessage(p0: Message?): Boolean {
-            Log.d("Auth", "error is occurred, message: $p0")
-            return true
-        }
-    }
-
     /*
-    Done! 0. Authenticate in todoist API.
-    API token: b0804bb8419deddec564faeffb164b6b78be49c2
-    Прикрутить корутины и вытаскивание всех активных тасков
-
-    Doing... 1. Watch video by R. Martin about clean arch
-
-    Done! 2. Watch video https://www.youtube.com/watch?v=W2c_HWthB0Y&t=623s
-
-    Done! 3. Прочесть статью https://developer.android.com/kotlin/coroutines
-
-    Done! 4. Прочесть статью https://proandroiddev.com/retrofit-met-coroutines-7bbe7e86825a
-
-    Done! 5. Прочесть статью https://proandroiddev.com/suspend-what-youre-doing-retrofit-has-now-coroutines-support-c65bd09ba067
-
-    6. Learn four links at the bottom of the article https://developer.android.com/kotlin/coroutines
-
-    7. Нагуглить и прочесть статьи 2 про clean arch, которые нашел в пт на работе.
-    Оттуда вытянуть схему разбиения по слоям.
-
     8. Посмотреть еще одно видео из плэйлиста от wiseAss
 
     9. Add ExceptionHandler for coroutines.
@@ -200,19 +174,6 @@ class MainActivity : AppCompatActivity() {
 
     //todo what lib is responsible for automatic response parsing? Retrofit itself of some gson adapter lib?
 
-    //todo sealed class Result with Value, Error flavours. Like Option in Scala :)
-
     //todo what if due to rotating a device network call completed and sends data to live data before viewmodel attached to view?
     // how can we deliver data to view in this case?
-
-    //todo coroutines and viewmodel. Working with scope.
-
-    //todo dissect logic in fragment on view and viewmodel.
-
-    //todo add network layer -> add repository -> add interactor.
-
-    //viewmodel in general.
-    //databinding and viewmodel, how do they live together?
-    //koin, how it works in general? Examples of using it.
-    //remember what is coroutines (scopes, contexts, ...). How to use it with viewmodel?
 }
