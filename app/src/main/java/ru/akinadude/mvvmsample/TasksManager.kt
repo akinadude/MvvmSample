@@ -9,6 +9,7 @@ class TasksManager {
 
     private val api = TodoistApi()
 
+    //todo dispatcher should be specified within interactor/usecase
     suspend fun getActiveTasks(authToken: String): List<Task> = withContext(Dispatchers.IO) {
         api.getActiveTasks(authToken)
     }

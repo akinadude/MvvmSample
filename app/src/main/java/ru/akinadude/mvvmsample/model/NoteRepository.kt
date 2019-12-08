@@ -36,6 +36,9 @@ class NoteRepository(application: Application) {
     // fetches data in a background thread
     fun getAllNotes(): LiveData<List<Note>> = allNotes
 
+    //todo doing nothing for a while
+    fun getAllNotes2():List<Note> = emptyList()
+
 
     private class InsertNoteAT(private val noteDao: NoteDao) : AsyncTask<Note, Unit, Unit>() {
 

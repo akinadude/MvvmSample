@@ -26,18 +26,23 @@ import ru.akinadude.mvvmsample.model.Note
 import ru.akinadude.mvvmsample.presentation.viewmodel.NoteViewModel
 import ru.akinadude.mvvmsample.presentation.viewmodel.TaskViewModel
 
+//todo target: clean architecture (coroutines, koin, unit tests, integration tests, ui tests),
+// multi module project
+// decent navigation approach
+
+//todo introduce view model from aac
+//todo drop all async tasks use coroutines
+//todo use single activity application
+//todo introduce interactors, koin
+//todo introduce proper repository pattern (look at some examples, need to properly use interfaces)
 
 class MainActivity : AppCompatActivity() {
 
-    //todo authorise on google tasks, get access token.
-    //todo create three tasks in list on google tasks.
-    //todo get that three tasks by web request with access token and show them in RV.
+    //todo authorise on todoist, get access token.
 
-    //todo How does refreshing of an access token work?
+    //todo How does refreshing of an access token should work?
 
     //todo For working with permissions try easy-permissions lib
-
-
     companion object {
         const val ADD_NOTE_REQUEST_CODE = 1
         const val EDIT_NOTE_REQUEST_CODE = 2
@@ -88,8 +93,9 @@ class MainActivity : AppCompatActivity() {
                     Toast.makeText(this@MainActivity, "Note deleted", Toast.LENGTH_SHORT).show()
                 }
             }
-        val itemTouchHelper = ItemTouchHelper(itemTouchCallbackImpl)
-        itemTouchHelper.attachToRecyclerView(recycler_view)
+        ItemTouchHelper(itemTouchCallbackImpl).apply {
+            attachToRecyclerView(recycler_view)
+        }
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
